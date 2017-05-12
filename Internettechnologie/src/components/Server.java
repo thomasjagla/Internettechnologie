@@ -49,14 +49,15 @@ public class Server{
 					if(bis != null) bis.close();
 					if(out != null) out.close();
 					if(clientSocket != null) clientSocket.close();
-					System.out.println("Connection closed \n");
+					System.out.println("Connection closed. \n");
 					
 				}
 			}
 		}
 		finally {
-			System.out.println("Server closed.");
+			System.out.println("Server closing...");
 			if(acceptSocket != null) acceptSocket.close();
+			System.out.println("Server closed. \n");
 		}
 	}
 }
