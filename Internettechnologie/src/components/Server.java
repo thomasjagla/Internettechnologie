@@ -28,7 +28,7 @@ public class Server{
 		fis = new FileInputStream(file);
 		bis = new BufferedInputStream(fis);
 		bis.read(bytes,0,bytes.length);	//Reads File to byte array
-		System.out.println("Loading File complete.");
+		System.out.println("Loading File complete. \n");
 		
 		//Server stuff
 		try {
@@ -36,7 +36,7 @@ public class Server{
 				try {
 					System.out.println("Accepting Socket...");
 					clientSocket = acceptSocket.accept();
-					System.out.println("Socket accepted: "+ clientSocket);
+					System.out.println("Socket accepted: "+ clientSocket.toString());
 					out = clientSocket.getOutputStream();
 					
 					System.out.println("Sending "+file.toString()+"("+bytes.length+") to "+clientSocket.toString()+" ...");
@@ -49,7 +49,8 @@ public class Server{
 					if(bis != null) bis.close();
 					if(out != null) out.close();
 					if(clientSocket != null) clientSocket.close();
-					System.out.println("Connection closed");
+					System.out.println("Connection closed \n");
+					
 				}
 			}
 		}
