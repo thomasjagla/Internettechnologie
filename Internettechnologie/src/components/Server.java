@@ -1,6 +1,7 @@
 package components;
 import java.io.*;
 import java.net.*;
+import java.text.SimpleDateFormat;
 
 
 public class Server{
@@ -29,6 +30,13 @@ public class Server{
 		bis = new BufferedInputStream(fis);
 		bis.read(bytes,0,bytes.length);	//Reads File to byte array
 		System.out.println("Loading File complete. \n");
+		
+		//JSON FILE DATA
+		JsonSerializer js = new JsonSerializer();
+		js.addDouble("datasize", (double)file.getTotalSpace());
+		SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+		js.addString("last modified", sdf.format(file.lastModified()));
+		System.out.println(js.getString());
 		
 		//Server stuff
 		try {
