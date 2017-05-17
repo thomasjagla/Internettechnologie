@@ -63,10 +63,11 @@ public class Server{
 					getTarget = getTarget.substring(0, getTarget.indexOf(" "));
 	
 					String httpResponse = "";
-					switch(getTarget) {
-					case "/close":
+					
+					if(getTarget.equals("/close")){
 						running = false;
-					case "/":
+					}
+					else if(getTarget.equals("/")){
 						try {
 							file = new File("./src/miscellaneous/index.html");
 							bytes = new byte[(int)file.length()];
@@ -93,11 +94,11 @@ public class Server{
 							
 							out.flush();
 							System.out.println("Sending complete.");
-							}catch(FileNotFoundException e) {System.out.println("~ERROR  Failed to access index.html");}
-					default:
-						
-						file = new File("./src/miscellaneous"+getTarget);
+						}catch(FileNotFoundException e) {System.out.println("~ERROR  Failed to access index.html");}
+					}
+					else {
 						try {
+							file = new File("./src/miscellaneous"+getTarget);
 							bytes = new byte[(int)file.length()];
 							fis = new FileInputStream(file);
 							bis = new BufferedInputStream(fis);
