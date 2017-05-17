@@ -91,7 +91,7 @@ public class JsonSerializer implements IJsonSerialize {
 
 	@Override
 	public String getString() {
-		String json = "";
+		String json = "{ ";
 		//String json = "JSON:\n{";
 
 		// Strings
