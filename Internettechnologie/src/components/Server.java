@@ -25,7 +25,7 @@ public class Server{
 		File file = null;
 		long fileLength = 0;
 		
-		String[] httpInfo = new String[9];
+		String[] httpInfo = new String[20];
 		String getTarget = "";
 		
 		//Serversocket
