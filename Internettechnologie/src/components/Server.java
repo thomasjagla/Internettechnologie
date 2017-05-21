@@ -1,150 +1,146 @@
 package components;
+
 import java.io.*;
 import java.net.*;
 import java.text.SimpleDateFormat;
 
-
-public class Server{
+public class Server {
 	public static void main(String argv[]) throws IOException {
-		
-		//Decl
+
+		// Decl
 		final int SOCKET_PORT = 80;
-		
+
 		boolean running = true;
-		
+
 		ServerSocket acceptSocket = null;
 		Socket clientSocket = null;
-		
+
 		OutputStream out = null;
 		InputStream in = null;
-		BufferedReader buff = null;
 		FileInputStream fis = null;
 		BufferedInputStream bis = null;
-		
-		byte[] bytes = null;
+		BufferedReader buff = null;
+
+		String[] httpHeader = new String[20];
+		String getTarget = "";
+
+		byte[] headerBytes = null;
+		byte[] fileBytes = null;
+
 		File file = null;
 		long fileLength = 0;
-		
-		String[] httpInfo = new String[20];
-		String getTarget = "";
-		
-		//Serversocket
+
+		// Serversocket
 		acceptSocket = new ServerSocket(SOCKET_PORT);
 
-		//File
+		// File
 		file = new File("./src/miscellaneous/test.html");
-		System.out.println("Loading File from: "+file.getAbsolutePath());
-		bytes = new byte[(int)file.length()];
+		System.out.println("Loading File from: " + file.getAbsolutePath());
+		fileBytes = new byte[(int) file.length()];
 		System.out.println("Loading File complete. \n");
-		
-		//JSON FILE DATA
+
+		// JSON FILE DATA
 		JsonSerializer js = new JsonSerializer();
-		js.addDouble("datasize", (double)file.getTotalSpace());
+		js.addDouble("datasize", (double) file.getTotalSpace());
 		SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
 		js.addString("last modified", sdf.format(file.lastModified()));
 		System.out.println(js.getString());
-		
-		//Server stuff
+
+		// Server stuff
+
 		try {
-			while(running) {
+
+			while (running) {
 				try {
-					System.out.println("Accepting Socket...");
+
+					out = null;
+					in = null;
+					fis = null;
+					bis = null;
+					buff = null;
+
+					httpHeader = new String[20];
+					getTarget = "";
+
+					headerBytes = null;
+					fileBytes = null;
+
+					file = null;
+					fileLength = 0;
+
+					System.out.print("Accepting Socket... ");
 					clientSocket = acceptSocket.accept();
-					System.out.println("Socket accepted: "+ clientSocket.toString());
+					System.out.println("Socket accepted: " + clientSocket.toString());
+
 					out = clientSocket.getOutputStream();
 					in = clientSocket.getInputStream();
+
 					buff = new BufferedReader(new InputStreamReader(in));
-					
-					int httpLines = 0;
-					while(buff.ready())httpInfo[httpLines++] = buff.readLine();
-					for(int i=0; i<httpLines; i++) System.out.println("HTTP-INFO: "+httpInfo[i]);
-					
-					getTarget = httpInfo[0].substring(httpInfo[0].indexOf(" ")+1, httpInfo[0].length());
-					getTarget = getTarget.substring(0, getTarget.indexOf(" "));
-	
-					String httpResponse = "";
-					
-					if(getTarget.equals("/close")){
-						running = false;
+					int httpHeaderLines = 0;
+					while (buff.ready())
+						httpHeader[httpHeaderLines++] = buff.readLine();
+					for (int i = 0; i < httpHeaderLines; i++)
+						System.out.println("HTTP-Header[" + i + "]: " + httpHeader[i]);
+
+					if (httpHeader[0] != null) {
+						if (httpHeader[0].contains("GET")) {
+							getTarget = httpHeader[0].substring(httpHeader[0].indexOf(" ") + 1, httpHeader[0].length());
+							getTarget = getTarget.substring(0, getTarget.indexOf(" "));
+
+							file = new File("./src/miscellaneous" + getTarget);
+							if (!file.isFile()) {
+								System.out.println(getTarget + " not found. Selected index.html instead.");
+								file = new File("./src/miscellaneous/index.html");
+							}
+							fileBytes = new byte[(int) file.length()];
+							fis = new FileInputStream(file);
+							bis = new BufferedInputStream(fis);
+							bis.read(fileBytes, 0, fileBytes.length);
+
+							httpHeader = new String[4];
+							httpHeader[0] = "HTTP/1.1 200";
+							httpHeader[1] = "Server: HTTPd/1.0 Date: Wed, 17 May 2017 15:32:15 CET";
+							httpHeader[2] = "Content-Type: text/html";
+							httpHeader[3] = "Content-Length: " + fileBytes.length;
+							headerBytes = (httpHeader[0] + "\n" + httpHeader[1] + "\n" + httpHeader[2] + "\n" + httpHeader[3] + "\n\n").getBytes();
+
+							System.out.print("Sending HTTP-Header to " + clientSocket.toString() + " ... ");
+							out.write(headerBytes);
+							out.flush();
+							System.out.println("Successfull.");
+
+							System.out.print("Sending " + file.toString() + "(" + fileBytes.length + ") to " + clientSocket.toString() + " ... ");
+							out.write(fileBytes, 0, fileBytes.length);
+							out.flush();
+							System.out.println("Successfull.");
+						}
+						else { // httpHeader[0] enthält kein GET
+
+						}
 					}
-					else if(getTarget.equals("/")){
-						try {
-							file = new File("./src/miscellaneous/index.html");
-							bytes = new byte[(int)file.length()];
-							fis = new FileInputStream(file);
-							bis = new BufferedInputStream(fis);
-							bis.read(bytes,0,bytes.length);
-							
-							httpResponse = httpResponse+"HTTP/1.1 200\n";
-							httpResponse = httpResponse+"Server: HTTPd/1.0 Date: Wed, 17 May 2017 15:32:15 CET\n";
-							httpResponse = httpResponse+"Content-Type: text/html\n";
-							httpResponse = httpResponse+"Content-Length: "+bytes.length+"\n\n";
-							
-							bytes = httpResponse.getBytes();
-							System.out.println("Sending HTTP-Response to "+clientSocket.toString()+" ...");
-							out.write(bytes);
-							out.flush();
-							
-							bytes = new byte[(int)file.length()];
-							fis = new FileInputStream(file);
-							bis = new BufferedInputStream(fis);
-							bis.read(bytes,0,bytes.length);
-							System.out.println("Sending "+file.toString()+"("+bytes.length+") to "+clientSocket.toString()+" ...");
-							out.write(bytes, 0, bytes.length);
-							
-							out.flush();
-							System.out.println("Sending complete.");
-						}catch(FileNotFoundException e) {System.out.println("~ERROR  Failed to access index.html");}
+					else { // httpHeader[0] ist null
+
 					}
-					else {
-						try {
-							file = new File("./src/miscellaneous"+getTarget);
-							bytes = new byte[(int)file.length()];
-							fis = new FileInputStream(file);
-							bis = new BufferedInputStream(fis);
-							bis.read(bytes,0,bytes.length);
-						
-							httpResponse = httpResponse+"HTTP/1.1 200\n";
-							httpResponse = httpResponse+"Server: HTTPd/1.0 Date: Wed, 17 May 2017 15:32:15 CET\n";
-							httpResponse = httpResponse+"Content-Type: text/html\n";
-							httpResponse = httpResponse+"Content-Length: "+bytes.length+"\n\n";
-						
-							bytes = httpResponse.getBytes();
-							System.out.println("Sending HTTP-Response to "+clientSocket.toString()+" ...");
-							out.write(bytes);
-							out.flush();
-						
-							bytes = new byte[(int)file.length()];
-							fis = new FileInputStream(file);
-							bis = new BufferedInputStream(fis);
-							bis.read(bytes,0,bytes.length);
-							System.out.println("Sending "+file.toString()+"("+bytes.length+") to "+clientSocket.toString()+" ...");
-							out.write(bytes, 0, bytes.length);
-						
-							out.flush();
-							System.out.println("Sending complete.");
-						}catch(FileNotFoundException e) {System.out.println("~ERROR  Client tried to access: "+getTarget);}
-					}
-					
+
 				}
 				finally {
-					System.out.println("Closing Connection...");
-					if(bis != null) bis.close();
-					if(out != null) out.close();
-					if(clientSocket != null) clientSocket.close();
-					System.out.println("Connection closed. \n");
-					
+					System.out.print("Closing Connection... ");
+					if (bis != null)
+						bis.close();
+					if (out != null)
+						out.close();
+					if (clientSocket != null)
+						clientSocket.close();
+					System.out.println("Successfull. \n");
 				}
 			}
+
 		}
 		finally {
-			System.out.println("Server closing...");
-			if(acceptSocket != null) acceptSocket.close();
-			System.out.println("Server closed. \n");
+			System.out.print("Server closing...");
+			if (acceptSocket != null)
+				acceptSocket.close();
+			System.out.println("Successfull. \n");
 		}
-	}
-	
-	public void sendHTTP(File file) {
-		
 	}
 }
