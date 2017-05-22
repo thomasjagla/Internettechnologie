@@ -15,20 +15,9 @@ public class Server {
 		ServerSocket acceptSocket = null;
 		Socket clientSocket = null;
 
-		OutputStream out = null;
-		InputStream in = null;
-		FileInputStream fis = null;
-		BufferedInputStream bis = null;
-		BufferedReader buff = null;
-
-		String[] httpHeader = new String[20];
-		String getTarget = "";
-
-		byte[] headerBytes = null;
-		byte[] fileBytes = null;
-
 		File file = null;
-		long fileLength = 0;
+
+		Thread[] threads = null;
 
 		// Serversocket
 		acceptSocket = new ServerSocket(SOCKET_PORT);
@@ -36,8 +25,6 @@ public class Server {
 		// File
 		file = new File("./src/miscellaneous/test.html");
 		System.out.println("Loading File from: " + file.getAbsolutePath());
-		fileBytes = new byte[(int) file.length()];
-		System.out.println("Loading File complete. \n");
 
 		// JSON FILE DATA
 		JsonSerializer js = new JsonSerializer();
@@ -49,95 +36,38 @@ public class Server {
 		// Server stuff
 
 		try {
-
+			threads = new Thread[20];
+			int index = 0;
 			while (running) {
-				try {
+				System.out.print("Accepting Socket... ");
+				clientSocket = acceptSocket.accept();
+				System.out.println("Socket accepted: " + clientSocket.toString());
 
-					out = null;
-					in = null;
-					fis = null;
-					bis = null;
-					buff = null;
-
-					httpHeader = new String[20];
-					getTarget = "";
-
-					headerBytes = null;
-					fileBytes = null;
-
-					file = null;
-					fileLength = 0;
-
-					System.out.print("Accepting Socket... ");
-					clientSocket = acceptSocket.accept();
-					System.out.println("Socket accepted: " + clientSocket.toString());
-
-					out = clientSocket.getOutputStream();
-					in = clientSocket.getInputStream();
-
-					buff = new BufferedReader(new InputStreamReader(in));
-					int httpHeaderLines = 0;
-					while (buff.ready())
-						httpHeader[httpHeaderLines++] = buff.readLine();
-					for (int i = 0; i < httpHeaderLines; i++)
-						System.out.println("HTTP-Header[" + i + "]: " + httpHeader[i]);
-
-					if (httpHeader[0] != null) {
-						if (httpHeader[0].contains("GET")) {
-							getTarget = httpHeader[0].substring(httpHeader[0].indexOf(" ") + 1, httpHeader[0].length());
-							getTarget = getTarget.substring(0, getTarget.indexOf(" "));
-
-							file = new File("./src/miscellaneous" + getTarget);
-							if (!file.isFile()) {
-								System.out.println(getTarget + " not found. Selected index.html instead.");
-								file = new File("./src/miscellaneous/index.html");
-							}
-							fileBytes = new byte[(int) file.length()];
-							fis = new FileInputStream(file);
-							bis = new BufferedInputStream(fis);
-							bis.read(fileBytes, 0, fileBytes.length);
-
-							httpHeader = new String[4];
-							httpHeader[0] = "HTTP/1.1 200";
-							httpHeader[1] = "Server: HTTPd/1.0 Date: Wed, 17 May 2017 15:32:15 CET";
-							httpHeader[2] = "Content-Type: text/html";
-							httpHeader[3] = "Content-Length: " + fileBytes.length;
-							headerBytes = (httpHeader[0] + "\n" + httpHeader[1] + "\n" + httpHeader[2] + "\n" + httpHeader[3] + "\n\n").getBytes();
-
-							System.out.print("Sending HTTP-Header to " + clientSocket.toString() + " ... ");
-							out.write(headerBytes);
-							out.flush();
-							System.out.println("Successfull.");
-
-							System.out.print("Sending " + file.toString() + "(" + fileBytes.length + ") to " + clientSocket.toString() + " ... ");
-							out.write(fileBytes, 0, fileBytes.length);
-							out.flush();
-							System.out.println("Successfull.");
-						}
-						else { // httpHeader[0] enthält kein GET
-
-						}
+				while (true) {
+					if (threads[index] == null) {
+						break;
 					}
-					else { // httpHeader[0] ist null
-
+					else if (threads[index].isAlive() == false) {
+						break;
 					}
-
+					if (++index == threads.length)
+						index = 0;
 				}
-				finally {
-					System.out.print("Closing Connection... ");
-					if (bis != null)
-						bis.close();
-					if (out != null)
-						out.close();
-					if (clientSocket != null)
-						clientSocket.close();
-					System.out.println("Successfull. \n");
-				}
+				threads[index] = new Thread(new ServerThread(clientSocket));
+				threads[index].run();
 			}
-
 		}
 		finally {
 			System.out.print("Server closing...");
+			try {
+				for (int i = 0; i < threads.length; i++) {
+					threads[i].join();
+				}
+			}
+			catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+
 			if (acceptSocket != null)
 				acceptSocket.close();
 			System.out.println("Successfull. \n");
