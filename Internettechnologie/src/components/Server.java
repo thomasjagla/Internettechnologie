@@ -3,6 +3,9 @@ package components;
 import java.io.*;
 import java.net.*;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class Server {
 	public static void main(String argv[]) throws IOException {
@@ -14,27 +17,37 @@ public class Server {
 
 		ServerSocket acceptSocket = null;
 		Socket clientSocket = null;
+		ArrayList<String> todoList = null;
+		Lock lock = null;
 
 		File file = null;
 
 		Thread[] threads = null;
-
+		//////
+		
+		// Multithreading
+		todoList = new ArrayList<String>();
+		lock = new ReentrantLock();
+		//////
+		
 		// Serversocket
 		acceptSocket = new ServerSocket(SOCKET_PORT);
-
+		//////
+		
 		// File
 		file = new File("./src/miscellaneous/test.html");
 		System.out.println("Loading File from: " + file.getAbsolutePath());
-
+		//////
+		
 		// JSON FILE DATA
 		JsonSerializer js = new JsonSerializer();
 		js.addDouble("datasize", (double) file.getTotalSpace());
 		SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
 		js.addString("last modified", sdf.format(file.lastModified()));
 		System.out.println(js.getString());
-
+		//////
+		
 		// Server stuff
-
 		try {
 			threads = new Thread[20];
 			int index = 0;
@@ -53,7 +66,7 @@ public class Server {
 					if (++index == threads.length)
 						index = 0;
 				}
-				threads[index] = new Thread(new ServerThread(clientSocket));
+				threads[index] = new Thread(new ServerThread(clientSocket, todoList, lock));
 				threads[index].run();
 			}
 		}
@@ -72,5 +85,7 @@ public class Server {
 				acceptSocket.close();
 			System.out.println("Successfull. \n");
 		}
+		//////
+		
 	}
 }

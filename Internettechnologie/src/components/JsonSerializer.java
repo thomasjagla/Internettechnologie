@@ -215,7 +215,8 @@ public class JsonSerializer implements IJsonSerialize {
 				str = str.substring(str.indexOf("\"") + 1, str.length());
 				str = str.substring(str.indexOf(":") + 1, str.length());
 
-				if (str.charAt(0) == '{') { 					// ARRAY
+			
+				if (str.charAt(0) == '{') { // ARRAY
 					endOfArray = false;
 					Map<String, Object> newArray = new HashMap();
 					
