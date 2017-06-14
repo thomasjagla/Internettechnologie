@@ -1,14 +1,66 @@
-<html>
-	<head>
+
+
+ <html>
+ <head>
 		<title>TESTSEITE</title>
 	</head>
-	<body>
-		<a>HELLO IM A TEST HTML:</a>
-		
-		
-		
-		<form method="get" action="./index.html">
+	
+    <script type="text/javascript">
+    var canvas, ctx, flag = false,
+        posX = 0,
+        posY = 0,
+        done = true,
+        lineArray = [];
+    
+    function init() {
+        canvas = document.getElementById('can');
+        ctx = canvas.getContext("2d");
+        w = canvas.width;
+        h = canvas.height;
+    
+        canvas.addEventListener("mousedown", function (e) {
+            processMouseEvent('down', e)
+        }, false);
+        canvas.addEventListener("mouseup", function (e) {
+            processMouseEvent('up', e)
+        }, false);
+        canvas.addEventListener("mouseout", function (e) {
+            processMouseEvent('out', e)
+        }, false);
+    }
+    
+    function processMouseEvent(action, e){
+    	if(action == 'up' || action == 'out'){
+	    	if(done == false){
+	    		ctx.strokeStyle = 'black';
+	    		ctx.lineWidth = 2;
+	    		ctx.moveTo(posX, posY);
+	    		ctx.lineTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+	    		ctx.stroke();
+	    		lineArray.push(posX);
+	    		lineArray.push(posY);
+	    		lineArray.push(e.clientX - canvas.offsetLeft);
+	    		lineArray.push(e.clientY - canvas.offsetTop);
+	    		console.log(lineArray);
+	    		done = true;
+	    	}
+   	 	}
+    	else if(action == 'down'){
+	    	posX = e.clientX - canvas.offsetLeft;
+	    	posY = e.clientY - canvas.offsetTop;
+	    	done = false;
+    	}
+    	
+    
+    }
+    </script>
+    
+    <body onload="init()">
+    <h2>Draw lines on the Canvas</h2>
+        <canvas id="can" width="400" height="400" style="border:2px solid;"></canvas>
+        
+        <form method="get" action="./index.html">
     		<input type="submit" value="Back to Index" />
 		</form>
-	</body>
-</html>
+    </body>
+    </html>
