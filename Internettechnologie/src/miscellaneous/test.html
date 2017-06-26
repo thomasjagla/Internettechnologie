@@ -10,7 +10,10 @@
         posX = 0,
         posY = 0,
         done = true,
-        lineArray = [];
+        lineArray = [],
+        username,
+        password,
+        xmlhttpr;
     
     function init() {
         canvas = document.getElementById('can');
@@ -27,6 +30,13 @@
         canvas.addEventListener("mouseout", function (e) {
             processMouseEvent('out', e)
         }, false);
+        
+        username = document.getElementById("username").value;
+    	password = document.getElementById("password").value;
+    	
+        if(username != "" && password != ""){
+        	processLogin();
+        }
     }
     
     function processMouseEvent(action, e){
@@ -53,14 +63,81 @@
     	
     
     }
+    
+    function processLogin(){
+    	username = document.getElementById("username").value;
+    	password = document.getElementById("password").value;
+    	
+    	if(window.XMLHttpRequest){
+    		xmlhttpr = new XMLHttpRequest();
+    	}
+    	else if(window.ActiveXObject){
+    		xmlhttpr = new ActiveXObject("Microsoft.XMLHTTP");
+    	}
+    	else{
+    		console.log("Can't create XMLHttpRequestObject");
+    		return false;
+    	}
+    	
+    	if(xmlhttpr){
+    		if(xmlhttpr.readyState==4 || xmlhttpr.readyState==0){
+    			xmlhttpr.open("POST", "/login", true);
+    			xmlhttpr.onreadystatechange = handleServerResponse;
+    			xmlhttpr.send("username="+username+"&password="+password);
+    		}
+    		else{
+    			console.log("XMLHttpRequestObject not ready, trying again ...");
+    			setTimeout('processLogin()', 1000);
+    		}
+    	}
+    	
+    	return false;
+    }
+    
+    function handleServerResponse(){
+    	var response = xmlhttpr.responseText;
+    	if(response=="{success: true}"){
+    		console.log("successfull login");
+    		document.getElementById('username').style.visibility = 'hidden';
+    		document.getElementById('password').style.visibility = 'hidden';
+    		document.getElementById('labelusername').style.visibility = 'hidden';
+    		document.getElementById('labelpassword').style.visibility = 'hidden';
+    		document.getElementById('loginbutton').style.visibility = 'hidden';
+    		document.getElementById('logininfo').innerHTML = "Login successfull";
+    		
+    		localStorage.setItem('username', username);
+    		localStorage.setItem('password', password);	
+    	}
+    	else{
+    		console.log(response);
+    		document.getElementById('logininfo').innerHTML = "Login failed";
+    	}
+    }
     </script>
     
     <body onload="init()">
+    <form onsubmit="return processLogin();">
+    	<label id="labelusername" for="username">Username:
+    		<input id="username" name="username">
+    	</label>
+    	<label id="labelpassword" for="password">Password:
+    		<input id="password" name="password">
+    	</label>
+    	<input id="loginbutton" type="submit" value="Login" />
+    	<br />
+    	<h4 id="logininfo"></h4>
+    </form>
+    <br />
+    
     <h2>Draw lines on the Canvas</h2>
         <canvas id="can" width="400" height="400" style="border:2px solid;"></canvas>
+        
+        
         
         <form method="get" action="./index.html">
     		<input type="submit" value="Back to Index" />
 		</form>
+		
+		
     </body>
     </html>

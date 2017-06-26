@@ -216,6 +216,24 @@ public class ServerThread implements Runnable {
 						this.addTodo(parameter.replace("newtodo=", ""));
 					}
 
+					if(getTarget.equals("/login")) {
+						if(parameter.contains("username=") && parameter.contains("password=")) {
+							String username = parameter.substring(parameter.indexOf("=")+1, parameter.indexOf("&"));
+							parameter = parameter.replaceFirst("=", "");
+							String password = parameter.substring(parameter.indexOf("=")+1);
+							
+							if(username.equals("admin") && password.equals("123")) {
+								oStream.write("{success: true}".getBytes());
+								oStream.flush();
+							}
+							else {
+								oStream.write("{success: false}".getBytes());
+								oStream.flush();
+							}
+						}
+						return;
+					}
+					
 					//Datei suchen
 					file = new File("./src/miscellaneous" + getTarget);
 					if (!file.isFile()) {
