@@ -52,6 +52,33 @@
 	    		lineArray.push(e.clientX - canvas.offsetLeft);
 	    		lineArray.push(e.clientY - canvas.offsetTop);
 	    		console.log(lineArray);
+	    		
+			    if(window.XMLHttpRequest){
+		    		xmlhttpr = new XMLHttpRequest();
+		    	}
+		    	else if(window.ActiveXObject){
+		    		xmlhttpr = new ActiveXObject("Microsoft.XMLHTTP");
+		    	}
+		    	else{
+		    		console.log("Can't create XMLHttpRequestObject");
+		    		return false;
+		    	}
+		    	
+		    	if(xmlhttpr){
+		    		if(xmlhttpr.readyState==4 || xmlhttpr.readyState==0){
+		    			xmlhttpr.open("POST", "/canvas_save", true);
+		    			var coords = "{\"x1\":"+posX;
+		    			coords = coords+", \"y1\":"+posY;
+		    			coords = coords+", \"x2\":"+(e.clientX - canvas.offsetLeft);
+		    			coords = coords+", \"y2\":"+(e.clientY - canvas.offsetTop)+"}";
+		    			xmlhttpr.send("coords="+coords);
+		    		}
+		    		else{
+		    			console.log("XMLHttpRequestObject not ready, trying again ...");
+		    			setTimeout('processLogin()', 1000);
+		    		}
+		    	}
+	    		
 	    		done = true;
 	    	}
    	 	}

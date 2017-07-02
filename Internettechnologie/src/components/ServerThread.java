@@ -39,12 +39,19 @@ public class ServerThread implements Runnable {
 
 	File file = null;
 	long fileLength = 0;
+	
+	JsonSerializer js = null;
+	ArrayList<Integer> canvasCoords = null;
 
-	public ServerThread(Socket clientSocket, ArrayList<String> todoList, Lock lock) {
+	public ServerThread(Socket clientSocket, ArrayList<String> todoList, Lock lock, ArrayList<Integer> canvasCoords) {
 		this.clientSocket = clientSocket;
 		this.todoList = todoList;
 		this.lock = lock;
-
+		
+		lock.lock();
+		this.canvasCoords = canvasCoords;
+		lock.unlock();
+		
 		bis = null;
 		oStream = null;
 		bReader = null;
@@ -60,6 +67,8 @@ public class ServerThread implements Runnable {
 
 		file = null;
 		fileLength = 0;
+		
+		
 	}
 
 	public void addTodo(String todo) {	//zur Todo hinzufügen
@@ -216,7 +225,7 @@ public class ServerThread implements Runnable {
 						this.addTodo(parameter.replace("newtodo=", ""));
 					}
 
-					if(getTarget.equals("/login")) {
+					if(getTarget.equals("/login")) {	//LOGIN
 						if(parameter.contains("username=") && parameter.contains("password=")) {
 							String username = parameter.substring(parameter.indexOf("=")+1, parameter.indexOf("&"));
 							parameter = parameter.replaceFirst("=", "");
@@ -233,33 +242,57 @@ public class ServerThread implements Runnable {
 						}
 						return;
 					}
-					
-					//Datei suchen
-					file = new File("./src/miscellaneous" + getTarget);
-					if (!file.isFile()) {
-						System.out.println(getTarget + " not found. Selected index.html instead.");
-						file = new File("./src/miscellaneous/index.html");
+					else if(getTarget.equals("/canvas_save"))	//CANVAS_SAVE
+					{
+						if(parameter.contains("coords=")) {
+							String coords = parameter.substring(parameter.indexOf("=")+1);
+							int x1,y1,x2,y2;
+							x1=Integer.parseInt(coords.substring(coords.indexOf(":")+1, coords.indexOf(",")));
+							coords = coords.substring(coords.indexOf(",")+1);
+							y1=Integer.parseInt(coords.substring(coords.indexOf(":")+1, coords.indexOf(",")));
+							coords = coords.substring(coords.indexOf(",")+1);
+							x2=Integer.parseInt(coords.substring(coords.indexOf(":")+1, coords.indexOf(",")));
+							coords = coords.substring(coords.indexOf(",")+1);
+							y2=Integer.parseInt(coords.substring(coords.indexOf(":")+1, coords.indexOf("}")));
+
+							lock.lock();
+							canvasCoords.add(x1);
+							canvasCoords.add(y1);
+							canvasCoords.add(x2);
+							canvasCoords.add(y2);
+							lock.unlock();
+							
+							
+						}
 					}
+					else {
+						//Datei suchen
+						file = new File("./src/miscellaneous" + getTarget);
+						if (!file.isFile()) {
+							System.out.println(getTarget + " not found. Selected index.html instead.");
+							file = new File("./src/miscellaneous/index.html");
+						}
 
-					//Datei in Byte-Array einlesen
-					fileBytes = new byte[(int) file.length()];
-					bis = new BufferedInputStream(new FileInputStream(file));
-					bis.read(fileBytes, 0, fileBytes.length);
+						//Datei in Byte-Array einlesen
+						fileBytes = new byte[(int) file.length()];
+						bis = new BufferedInputStream(new FileInputStream(file));
+						bis.read(fileBytes, 0, fileBytes.length);
 
-					//Header erstellen
-					httpHeader = new String[4];
-					httpHeader[0] = "HTTP/1.1 200";
-					httpHeader[1] = "Server: HTTPd/1.0 Date: Wed, 17 May 2017 15:32:15 CET";
-					httpHeader[2] = "Content-Type: text/html";
-					httpHeader[3] = "Content-Length: " + fileBytes.length;
-					headerBytes = (httpHeader[0] + "\n" + httpHeader[1] + "\n" + httpHeader[2] + "\n" + httpHeader[3] + "\n\n").getBytes();
+						//Header erstellen
+						httpHeader = new String[4];
+						httpHeader[0] = "HTTP/1.1 200";
+						httpHeader[1] = "Server: HTTPd/1.0 Date: Wed, 17 May 2017 15:32:15 CET";
+						httpHeader[2] = "Content-Type: text/html";
+						httpHeader[3] = "Content-Length: " + fileBytes.length;
+						headerBytes = (httpHeader[0] + "\n" + httpHeader[1] + "\n" + httpHeader[2] + "\n" + httpHeader[3] + "\n\n").getBytes();
 
-					//Senden
-					System.out.print("Sending " + file.getName() + " ... ");
-					oStream.write(headerBytes);
-					oStream.write(fileBytes, 0, fileBytes.length);
-					oStream.flush();
-					System.out.println("Done.");
+						//Senden
+						System.out.print("Sending " + file.getName() + " ... ");
+						oStream.write(headerBytes);
+						oStream.write(fileBytes, 0, fileBytes.length);
+						oStream.flush();
+					}
+					
 				}
 				else { // HTTP-Header[0] unbekannt
 					System.out.println("~ Weder GET noch POST");

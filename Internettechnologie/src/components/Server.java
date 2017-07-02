@@ -18,6 +18,7 @@ public class Server {
 		ServerSocket acceptSocket = null;
 		Socket clientSocket = null;
 		ArrayList<String> todoList = null;
+		ArrayList<Integer> canvasCoords = null;
 		Lock lock = null;
 
 		File file = null;
@@ -27,6 +28,7 @@ public class Server {
 		
 		// Multithreading
 		todoList = new ArrayList<String>();
+		canvasCoords = new ArrayList<Integer>();
 		lock = new ReentrantLock();
 		//////
 		
@@ -66,7 +68,7 @@ public class Server {
 					if (++index == threads.length)
 						index = 0;
 				}
-				threads[index] = new Thread(new ServerThread(clientSocket, todoList, lock));
+				threads[index] = new Thread(new ServerThread(clientSocket, todoList, lock, canvasCoords));
 				threads[index].run();
 			}
 		}
