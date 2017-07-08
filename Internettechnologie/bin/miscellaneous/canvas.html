@@ -18,6 +18,8 @@
     function init() {
         canvas = document.getElementById('can');
         ctx = canvas.getContext("2d");
+        ctx.strokeStyle = 'black';
+	    ctx.lineWidth = 2;
         w = canvas.width;
         h = canvas.height;
     
@@ -37,13 +39,17 @@
         if(username != "" && password != ""){
         	processLogin();
         }
+        var url = window.location.href.toString();
+        if(url.includes("id")){
+        	var cid = url.substr(url.indexOf("=")+1);
+        	document.getElementById('canvasid').value = cid;
+        	loadCanvas();
+        }
     }
     
     function processMouseEvent(action, e){
     	if(action == 'up' || action == 'out'){
 	    	if(done == false){
-	    		ctx.strokeStyle = 'black';
-	    		ctx.lineWidth = 2;
 	    		ctx.moveTo(posX, posY);
 	    		ctx.lineTo(e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
 	    		ctx.stroke();
@@ -52,33 +58,7 @@
 	    		lineArray.push(e.clientX - canvas.offsetLeft);
 	    		lineArray.push(e.clientY - canvas.offsetTop);
 	    		console.log(lineArray);
-	    		
-			    if(window.XMLHttpRequest){
-		    		xmlhttpr = new XMLHttpRequest();
-		    	}
-		    	else if(window.ActiveXObject){
-		    		xmlhttpr = new ActiveXObject("Microsoft.XMLHTTP");
-		    	}
-		    	else{
-		    		console.log("Can't create XMLHttpRequestObject");
-		    		return false;
-		    	}
-		    	
-		    	if(xmlhttpr){
-		    		if(xmlhttpr.readyState==4 || xmlhttpr.readyState==0){
-		    			xmlhttpr.open("POST", "/canvas_save", true);
-		    			var coords = "{\"x1\":"+posX;
-		    			coords = coords+", \"y1\":"+posY;
-		    			coords = coords+", \"x2\":"+(e.clientX - canvas.offsetLeft);
-		    			coords = coords+", \"y2\":"+(e.clientY - canvas.offsetTop)+"}";
-		    			xmlhttpr.send("coords="+coords);
-		    		}
-		    		else{
-		    			console.log("XMLHttpRequestObject not ready, trying again ...");
-		    			setTimeout('processLogin()', 1000);
-		    		}
-		    	}
-	    		
+
 	    		done = true;
 	    	}
    	 	}
@@ -135,10 +115,115 @@
     		localStorage.setItem('username', username);
     		localStorage.setItem('password', password);	
     	}
-    	else{
+    	else if(response=="{success: false}"){
     		console.log(response);
     		document.getElementById('logininfo').innerHTML = "Login failed";
     	}
+    	else if(response.includes("canvas")){
+       		clearCanvas();
+
+    		response = response.substr(response.indexOf("[")+1);
+    		response = response.substr(0, response.indexOf("]"));
+    		lineArray = []
+    		lineArray.push(response.substr(0,response.indexOf(",")));
+    		response = response.substr(response.indexOf(","));
+    		
+    		while(response.includes(",")){
+    			response = response.substr(1);
+    			if(response.includes(",")){
+    				lineArray.push(response.substr(0,response.indexOf(",")));
+    				response = response.substr(response.indexOf(","));
+    			}
+    			else{
+    				lineArray.push(response.substr(0));
+    			}
+    		}
+    		
+    		for(var i=0; i<lineArray.length; i+=4){
+    		console.log(i);
+    			ctx.moveTo(lineArray[i], lineArray[i+1]);
+	    		ctx.lineTo(lineArray[i+2], lineArray[i+3]);
+	    		ctx.stroke();
+    		}
+    	}
+    	else{
+    		console.log("unknown response: "+response);
+    	}
+    }
+    
+    function saveCanvas(){
+    	
+    	if(window.XMLHttpRequest){
+		    xmlhttpr = new XMLHttpRequest();
+		}
+		else if(window.ActiveXObject){
+		    xmlhttpr = new ActiveXObject("Microsoft.XMLHTTP");
+		}
+		else{
+			console.log("Can't create XMLHttpRequestObject");
+		  	return false;
+		}
+		    	
+		if(xmlhttpr){
+		    if(xmlhttpr.readyState==4 || xmlhttpr.readyState==0){
+		    	var canvasid = document.getElementById('canvasid').value;
+		    	if(canvasid == null || canvasid<0 || canvasid>100 ||  canvasid== ""){
+		    		canvasid=0;
+		    		document.getElementById('canvasid').value = 0;
+		    	}
+		    			
+		    	xmlhttpr.open("POST", "/canvas_save", true);
+		    	var send = "{\"canvasid\":"+canvasid+", \"coords\":[";
+		    	for(var i=0; i<lineArray.length; i++){
+		    		if(i!=0)send = send+",";
+		    		send = send+lineArray[i];
+		    	}
+		    	send = send+"]}";
+		    	xmlhttpr.send("list="+send);
+		    }
+		    else{
+		   		console.log("XMLHttpRequestObject not ready, trying again ...");
+		    	setTimeout('saveCanvas()', 1000);
+		    }
+		}
+    }
+    
+    function loadCanvas(){
+    	if(window.XMLHttpRequest){
+		    xmlhttpr = new XMLHttpRequest();
+		}
+		else if(window.ActiveXObject){
+		    xmlhttpr = new ActiveXObject("Microsoft.XMLHTTP");
+		}
+		else{
+			console.log("Can't create XMLHttpRequestObject");
+		  	return false;
+		}
+		    	
+		if(xmlhttpr){
+		    if(xmlhttpr.readyState==4 || xmlhttpr.readyState==0){
+		    	var canvasid = document.getElementById('canvasid').value;
+		    	if(canvasid == null || canvasid<0 || canvasid>100 ||  canvasid== ""){
+		    		canvasid=-1;
+		    		document.getElementById('canvasid').value = -1;
+		    	}
+		    			
+		    	xmlhttpr.open("POST", "/canvas_load", true);
+		    	xmlhttpr.onreadystatechange = handleServerResponse;
+		    	var send = "{\"canvasid\":"+canvasid+"}";
+		    	xmlhttpr.send("canvasid="+send);
+		    }
+		    else{
+		   		console.log("XMLHttpRequestObject not ready, trying again ...");
+		    	setTimeout('loadCanvas()', 1000);
+		    }
+		}
+    }
+    
+    function clearCanvas(){
+    	lineArray = [];
+    	ctx.clearRect(0, 0, canvas.width, canvas.height);
+    	ctx.beginPath();
     }
     </script>
     
@@ -158,9 +243,18 @@
     
     <h2>Draw lines on the Canvas</h2>
         <canvas id="can" width="400" height="400" style="border:2px solid;"></canvas>
-        
-        
-        
+        <br />
+        <br />
+        <input id="canvasid" type="text"></input>
+        <button onclick="loadCanvas()">Load</button>
+        <button onclick="saveCanvas()">Save</button>
+        <button onclick="clearCanvas()">Clear</button>
+        <br />
+        <br />
+        <br />
+        <form method="get" action="./canvaslist.html">
+    		<input type="submit" value="Show Canvas List" />
+		</form>
         <form method="get" action="./index.html">
     		<input type="submit" value="Back to Index" />
 		</form>

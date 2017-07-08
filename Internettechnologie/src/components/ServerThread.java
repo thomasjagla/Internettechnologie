@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -41,15 +42,15 @@ public class ServerThread implements Runnable {
 	long fileLength = 0;
 	
 	JsonSerializer js = null;
-	ArrayList<Integer> canvasCoords = null;
+	Map<Integer, ArrayList<Integer>> canvasList = null;
 
-	public ServerThread(Socket clientSocket, ArrayList<String> todoList, Lock lock, ArrayList<Integer> canvasCoords) {
+	public ServerThread(Socket clientSocket, ArrayList<String> todoList, Lock lock, Map<Integer, ArrayList<Integer>> canvasList) {
 		this.clientSocket = clientSocket;
 		this.todoList = todoList;
 		this.lock = lock;
 		
 		lock.lock();
-		this.canvasCoords = canvasCoords;
+		this.canvasList = canvasList;
 		lock.unlock();
 		
 		bis = null;
@@ -177,6 +178,51 @@ public class ServerThread implements Runnable {
 						oStream.flush();
 						System.out.println("Done.");
 					}
+					else if (getTarget.equals("/canvaslist.html")) { //GET von canvaslist.html
+						//HTML mit dynamischer Listenlänge erstellen
+						String canvaslist = "<html><head><title>Canvas-Liste</title></head><body><h1>CANVAS-LISTE:</h1><br />";
+						canvaslist = canvaslist+"<a href=\"canvas.html?id=-1\">All Canvas at once</a><br />";
+						for (Map.Entry<Integer, ArrayList<Integer>> entry : canvasList.entrySet())
+						{
+							canvaslist = canvaslist+"<a href=\"canvas.html?id="+entry.getKey()+"\">Canvas "+entry.getKey()+"</a><br />";
+						}
+						canvaslist = canvaslist + "<br /><br /><form method=\"get\" action=\"./canvas.html\"><input type=\"submit\" value=\"Draw a new Canvas\" /></form><form method=\"get\" action=\"./index.html\">\r\n<input type=\"submit\" value=\"Back to Index\" />\r\n</form></body></html>";
+						fileBytes = canvaslist.getBytes();
+						
+						//Header erstellen
+						httpHeader = new String[4];
+						httpHeader[0] = "HTTP/1.1 200";
+						httpHeader[1] = "Server: HTTPd/1.0 Date: Wed, 17 May 2017 15:32:15 CET";
+						httpHeader[2] = "Content-Type: text/html";
+						httpHeader[3] = "Content-Length: " + fileBytes.length;
+						headerBytes = (httpHeader[0] + "\n" + httpHeader[1] + "\n" + httpHeader[2] + "\n" + httpHeader[3] + "\n\n").getBytes();
+
+						//Senden
+						System.out.print("Sending canvaslist.html ... ");
+						oStream.write(headerBytes);
+						oStream.write(fileBytes, 0, fileBytes.length);
+						oStream.flush();
+						System.out.println("Done.");
+					}
+					else if (getTarget.equals("/getcanvas")) { //GET von /getcanvas
+						String redirect = "<script>function init() {window.location = \"/canvas.html?id=-1\";}</script><html><body onload=\"init()\"></body></html>";
+						fileBytes = redirect.getBytes();
+						
+						//Header erstellen
+						httpHeader = new String[4];
+						httpHeader[0] = "HTTP/1.1 200";
+						httpHeader[1] = "Server: HTTPd/1.0 Date: Wed, 17 May 2017 15:32:15 CET";
+						httpHeader[2] = "Content-Type: text/html";
+						httpHeader[3] = "Content-Length: " + fileBytes.length;
+						headerBytes = (httpHeader[0] + "\n" + httpHeader[1] + "\n" + httpHeader[2] + "\n" + httpHeader[3] + "\n\n").getBytes();
+
+						//Senden
+						System.out.print("Sending /getcanvas redirect ... ");
+						oStream.write(headerBytes);
+						oStream.write(fileBytes, 0, fileBytes.length);
+						oStream.flush();
+						System.out.println("Done.");
+					}
 					else {	//GET aber keine todo.html
 						file = new File("./src/miscellaneous" + getTarget);	//Datei raussuchen
 						if (!file.isFile()) {	//Keine Datei gefunden -> Standartdatei /index.html
@@ -244,26 +290,71 @@ public class ServerThread implements Runnable {
 					}
 					else if(getTarget.equals("/canvas_save"))	//CANVAS_SAVE
 					{
-						if(parameter.contains("coords=")) {
-							String coords = parameter.substring(parameter.indexOf("=")+1);
-							int x1,y1,x2,y2;
-							x1=Integer.parseInt(coords.substring(coords.indexOf(":")+1, coords.indexOf(",")));
-							coords = coords.substring(coords.indexOf(",")+1);
-							y1=Integer.parseInt(coords.substring(coords.indexOf(":")+1, coords.indexOf(",")));
-							coords = coords.substring(coords.indexOf(",")+1);
-							x2=Integer.parseInt(coords.substring(coords.indexOf(":")+1, coords.indexOf(",")));
-							coords = coords.substring(coords.indexOf(",")+1);
-							y2=Integer.parseInt(coords.substring(coords.indexOf(":")+1, coords.indexOf("}")));
+						parameter = parameter.substring(parameter.indexOf(":")+1);
+						int canvasId = Integer.parseInt(parameter.substring(0, parameter.indexOf(",")));
+						parameter = parameter.substring(parameter.indexOf("[")+1);
+						ArrayList<Integer> currentCanvas = new ArrayList<Integer>();
+						currentCanvas.add(Integer.parseInt(parameter.substring(0,parameter.indexOf(","))));
+						parameter = parameter.substring(parameter.indexOf(","));
+						
+						while(parameter.contains(",")) {
+							parameter = parameter.substring(parameter.indexOf(",")+1);
+							if(parameter.contains(",")){
+								currentCanvas.add(Integer.parseInt(parameter.substring(0,parameter.indexOf(","))));
+								parameter = parameter.substring(parameter.indexOf(","));
+							}
+							else {
+								currentCanvas.add(Integer.parseInt(parameter.substring(0,parameter.indexOf("]"))));
+							}	
+						}
+						
+						lock.lock();
+						canvasList.put(canvasId, currentCanvas);
+						lock.unlock();
+					}
+					else if(getTarget.equals("/canvas_load"))	//CANVAS_LOAD
+					{
+						int canvasId = -1;
+						String send = "";
+						ArrayList<Integer> currentCanvas = null;
+						
+						if(parameter.contains("canvasid")) {
+							parameter = parameter.substring(parameter.indexOf(":")+1, parameter.indexOf("}"));						
+							canvasId = Integer.parseInt(parameter);						
+						}
+						lock.lock();
+						send="{\"canvas\":[";
 
-							lock.lock();
-							canvasCoords.add(x1);
-							canvasCoords.add(y1);
-							canvasCoords.add(x2);
-							canvasCoords.add(y2);
-							lock.unlock();
+						if(canvasList.containsKey(canvasId)) {
+							currentCanvas = canvasList.get(canvasId);
 							
+							send = send+currentCanvas.get(0);
+							for(int i=1;i<currentCanvas.size();i++) {
+								send = send+","+currentCanvas.get(i);
+							}
 							
 						}
+						else {
+							boolean first = true;
+							send = send+"0,0,0,0,";
+							for (Map.Entry<Integer, ArrayList<Integer>> entry : canvasList.entrySet())
+							{
+								if(!first) {
+									send = send+",";
+								}
+								currentCanvas = canvasList.get(entry.getKey());
+								send = send+currentCanvas.get(0);
+								for(int i=1;i<currentCanvas.size();i++) {
+									send = send+","+currentCanvas.get(i);
+								}
+								first = false;
+							}
+						}
+						send=send+"]}";
+						lock.unlock();
+						
+						oStream.write(send.getBytes());
+						oStream.flush();
 					}
 					else {
 						//Datei suchen

@@ -4,6 +4,8 @@ import java.io.*;
 import java.net.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -18,7 +20,7 @@ public class Server {
 		ServerSocket acceptSocket = null;
 		Socket clientSocket = null;
 		ArrayList<String> todoList = null;
-		ArrayList<Integer> canvasCoords = null;
+		Map<Integer, ArrayList<Integer>> canvasList = null;
 		Lock lock = null;
 
 		File file = null;
@@ -28,7 +30,7 @@ public class Server {
 		
 		// Multithreading
 		todoList = new ArrayList<String>();
-		canvasCoords = new ArrayList<Integer>();
+		canvasList = new HashMap<Integer, ArrayList<Integer>>();
 		lock = new ReentrantLock();
 		//////
 		
@@ -68,7 +70,7 @@ public class Server {
 					if (++index == threads.length)
 						index = 0;
 				}
-				threads[index] = new Thread(new ServerThread(clientSocket, todoList, lock, canvasCoords));
+				threads[index] = new Thread(new ServerThread(clientSocket, todoList, lock, canvasList));
 				threads[index].run();
 			}
 		}
