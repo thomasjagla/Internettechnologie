@@ -13,7 +13,8 @@
         lineArray = [],
         username,
         password,
-        xmlhttpr;
+        xmlhttpr,
+        connection;
     
     function init() {
         canvas = document.getElementById('can');
@@ -225,6 +226,26 @@
     	ctx.clearRect(0, 0, canvas.width, canvas.height);
     	ctx.beginPath();
     }
+    
+    function getSessions(){
+    	connection = new WebSocket('ws://debby.vs.uni-due.de/ws/');
+    	
+    	connection.onmessage = function (e) {
+  			console.log('Server: ' + e.data);
+		};
+		
+		connection.onerror = function (e) {
+  			console.log('Error: ' + e.data);
+		};
+		
+		connection.onopen = function (e) {
+  			console.log('Connected');
+  			console.log('Sending... '+'{\"type\":\"join\", session:\"FIRSTSESSION\"}');
+  			connection.send('{\"type\":\"join\", session:\"FIRSTSESSION\"}');
+  			connection.send('{\"type\":\"list\"}');
+		};
+    }
+    
     </script>
     
     <body onload="init()">
@@ -258,6 +279,8 @@
         <form method="get" action="./index.html">
     		<input type="submit" value="Back to Index" />
 		</form>
+		<br />
+		<button onclick="getSessions()">Get Sessions</button>
 		
 		
     </body>
