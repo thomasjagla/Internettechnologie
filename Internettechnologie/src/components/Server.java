@@ -39,7 +39,7 @@ public class Server {
 		//////
 		
 		// File
-		file = new File("./src/miscellaneous/test.html");
+		file = new File("./src/miscellaneous/canvas.html");
 		System.out.println("Loading File from: " + file.getAbsolutePath());
 		//////
 		
@@ -48,7 +48,8 @@ public class Server {
 		js.addDouble("datasize", (double) file.getTotalSpace());
 		SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
 		js.addString("last modified", sdf.format(file.lastModified()));
-		System.out.println(js.getString());
+		System.out.println("Übung 2:");
+		System.out.println(js.getString()+"\n");
 		//////
 		
 		// Server stuff

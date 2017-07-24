@@ -152,7 +152,7 @@ public class ServerThread implements Runnable {
 						getTarget = getTarget.substring(0, getTarget.indexOf("?"));
 						System.out.println("GET-Parameter: " + parameter);
 					}
-					if (getTarget.equals("/todo.html")) { //GET von todo.html
+					if (getTarget.equals("/todoget.html")) { //GET von todo.html
 						ArrayList<String> l = this.getTodoList();
 
 						//HTML mit dynamischer Listenlänge erstellen
@@ -160,7 +160,7 @@ public class ServerThread implements Runnable {
 						for (int i = 0; i < l.size(); i++) {
 							todo = todo + "<li>" + l.get(i) + "</li>";
 						}
-						todo = todo + "</ol><form method=\"get\" action=\"./newtodo.html\"><input type=\"submit\" value=\"New Todo\" /></form><form method=\"get\" action=\"./index.html\">\r\n<input type=\"submit\" value=\"Back to Index\" />\r\n</form></body></html>";
+						todo = todo + "</ol><form method=\"get\" action=\"./todoadd.html\"><input type=\"submit\" value=\"New Todo\" /></form><form method=\"get\" action=\"./index.html\">\r\n<input type=\"submit\" value=\"Back to Index\" />\r\n</form></body></html>";
 						fileBytes = todo.getBytes();
 						
 						//Header erstellen
@@ -223,7 +223,7 @@ public class ServerThread implements Runnable {
 						oStream.flush();
 						System.out.println("Done.");
 					}
-					else {	//GET aber keine todo.html
+					else {	//GET Ordnerdateien
 						file = new File("./src/miscellaneous" + getTarget);	//Datei raussuchen
 						if (!file.isFile()) {	//Keine Datei gefunden -> Standartdatei /index.html
 							System.out.println(getTarget + " not found. Selected index.html instead.");

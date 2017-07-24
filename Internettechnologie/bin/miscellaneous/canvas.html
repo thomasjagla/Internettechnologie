@@ -34,8 +34,9 @@
             processMouseEvent('out', e)
         }, false);
         
-        username = document.getElementById("username").value;
-    	password = document.getElementById("password").value;
+        document.getElementById("username").value = localStorage.getItem('username');
+        document.getElementById("password").value = localStorage.getItem('password');
+    	
     	
         if(username != "" && password != ""){
         	processLogin();
@@ -242,7 +243,9 @@
   			console.log('Connected');
   			console.log('Sending... '+'{\"type\":\"join\", session:\"FIRSTSESSION\"}');
   			connection.send('{\"type\":\"join\", session:\"FIRSTSESSION\"}');
+  			//Returns {"success":false,"reason":"Could not find a session for your client. Not broadcasting..."}
   			connection.send('{\"type\":\"list\"}');
+  			//Returns Server: {"type":"list","sessions":{}}
 		};
     }
     
@@ -250,6 +253,7 @@
     
     <body onload="init()">
     <form onsubmit="return processLogin();">
+    	Übung 6(admin, 123):
     	<label id="labelusername" for="username">Username:
     		<input id="username" name="username">
     	</label>
@@ -266,21 +270,31 @@
         <canvas id="can" width="400" height="400" style="border:2px solid;"></canvas>
         <br />
         <br />
+        Übung 7:   CanvasID(0-100):
         <input id="canvasid" type="text"></input>
-        <button onclick="loadCanvas()">Load</button>
-        <button onclick="saveCanvas()">Save</button>
-        <button onclick="clearCanvas()">Clear</button>
+        <button onclick="loadCanvas()">Load Canvas with CanvasID</button>
+        <button onclick="saveCanvas()">Save Canvas with CanvasID</button>
+        <button onclick="clearCanvas()">Clear Canvas</button>
+        <br />
+        Load returns all Canvas at once if ID is invalid or Canas is empty.
         <br />
         <br />
-        <br />
+        Übung 8:<br />
         <form method="get" action="./canvaslist.html">
     		<input type="submit" value="Show Canvas List" />
 		</form>
+        <br />
+        <br />
+        Übung 8:<br />
+        <button onclick="getSessions()">Get Sessions</button><br />
+        Returns {"success":false,"reason":"Could not find a session for your client. Not broadcasting..."}
+        <br />
+        
         <form method="get" action="./index.html">
     		<input type="submit" value="Back to Index" />
 		</form>
 		<br />
-		<button onclick="getSessions()">Get Sessions</button>
+		
 		
 		
     </body>
